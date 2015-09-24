@@ -2,8 +2,8 @@
 /*
  * Load other Includes
  */
-include("./proto/protocolbuffers.inc.php");
-include("./proto/market.proto.php");
+include(__DIR__ . "/proto/protocolbuffers.inc.php");
+include(__DIR__ . "/proto/market.proto.php");
 
 /**
  * @author Niklas Nilsson <splitfeed@gmail.com>
@@ -17,14 +17,14 @@ class MarketSession {
 	/**
 	 *
 	 */
-	function __construct () {
-		$this->context = new RequestContext();
+	function __construct ($language = "en", $country = "US") {
+		$this->context = new \RequestContext();
 		$this->context->setUnknown1(0);
 		$this->context->setVersion(8013013);
 		$this->context->setDeviceAndSdkVersion("crespo:8");
 
-		$this->context->setUserLanguage("en");
-		$this->context->setUserCountry("US");
+		$this->context->setUserLanguage($language);
+		$this->context->setUserCountry($country);
 
 		$this->setOperatorTmobile();
 	}
@@ -48,7 +48,7 @@ class MarketSession {
 	public function setOperatorSunrise() {
 		$this->setOperator("sunrise", "22802");
 	}
-
+        
 	public function setOperator($alpha, $simAlpha, $numeric = "", $simNumeric = "") {
 		if (!$numeric && !$simNumeric) {
 			$this->context->setOperatorAlpha($alpha);
@@ -71,7 +71,7 @@ class MarketSession {
 	 * @param unknown_type $email
 	 * @param unknown_type $password
 	 */
-	public function login($email, $password) {
+	public function login($email, $password, $optionsCurl = []) {
 		$postFields	= array(
 			"Email"			=> $email,
 			"Passwd"		=> $password,
@@ -83,7 +83,7 @@ class MarketSession {
 			$post .= $field."=".urlencode($val)."&";
 		}
 
-		// create a new cURL resource
+		// create a new \cURL resource
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, "https://www.google.com/accounts/ClientLogin");
 		curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -93,7 +93,12 @@ class MarketSession {
 		@curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 
-
+                if(!empty($optionsCurl)) {
+                    foreach($optionsCurl as $name => $value) {
+                        curl_setopt($ch, $name, $value);
+                    }
+                }
+                
 		$headers = array(
 			//"User-Agent: Android-Market/2 (sapphire PLAT-RC33); gzip",
 			//"Content-Type: application/x-www-form-urlencoded",
@@ -150,12 +155,12 @@ class MarketSession {
 	 *
 	 * @param unknown_type $requestGroup
 	 */
-	public function execute($requestGroup) {
-		$request = new Request();
+	public function execute($requestGroup, $optionsCurl = []) {
+		$request = new \Request();
 		$request->setContext($this->context);
 		$request->addRequestGroup($requestGroup);
 
-		return $this->executeProtobuf($request);
+		return $this->executeProtobuf($request, $optionsCurl);
 	}
 
 	/**
@@ -163,17 +168,17 @@ class MarketSession {
 	 * @param Request $request
 	 * @return Response
 	 */
-	public function executeProtobuf($request) {
+	public function executeProtobuf($request, $optionsCurl = []) {
 		if (!$this->validate()) {
-			throw new Exception("Missing authentication or Android ID");
+			throw new \Exception("Missing authentication or Android ID");
 		}
 
-		$http = $this->executeRawHttpQuery($this->protobufToStr($request));
+		$http = $this->executeRawHttpQuery($this->protobufToStr($request), $optionsCurl);
 
 		$fp = fopen("php://memory", "w+b");
 		fwrite($fp, $http, strlen($http));
 		rewind($fp);
-		$response = new Response();
+		$response = new \Response();
 		$response->read($fp);
 
 		return $response;
@@ -196,7 +201,7 @@ class MarketSession {
 	 *
 	 * @param unknown_type $request
 	 */
-	private function executeRawHttpQuery($request) {
+	private function executeRawHttpQuery($request, $optionsCurl = []) {
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, "https://android.clients.google.com/market/api/ApiRequest");
 		curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -217,11 +222,17 @@ class MarketSession {
 		);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
+                if(!empty($optionsCurl)) {
+                    foreach($optionsCurl as $name => $value) {
+                        curl_setopt($ch, $name, $value);
+                    }
+                }
+                
 		$ret = curl_exec($ch);
 
 		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		if ($http_code != 200) {
-			throw new Exception("HTTP request returned code $http_code");
+			throw new \Exception("HTTP request returned code $http_code");
 		}
 
 		curl_close($ch);
@@ -346,4 +357,3 @@ class MarketSession {
 	    return $data;
 	}
 }
-?>

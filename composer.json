@@ -1,5 +1,5 @@
 {
-    "name": "splitfeed/android-market-api-php",
+    "name": "kurispesso/android-market-api-php",
     "description": "PHP implementation of the Java Android Market API",
     "license": "GNU GPL v2.0",
     "authors": [
@@ -15,5 +15,6 @@
     ],
     "autoload": {
         "classmap": ["src"]
-    }
+    },
+    "minimum-stability": "dev"
 }
