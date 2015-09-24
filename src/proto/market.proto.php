@@ -2083,6 +2083,17 @@ class Comment {
          . Protobuf::toString('authorId_', $this->authorId_);
   }
   
+  public function toArray() {
+    return [
+         'unknown' => $this->_unknown,
+         'text_' => $this->text_,
+         'rating_' => $this->rating_,
+         'authorName_' => $this->authorName_,
+         'creationTime_' => $this->creationTime_,
+         'authorId_' => $this->authorId_,
+    ];
+  }
+  
   // optional string text = 1;
 
   private $text_ = null;
